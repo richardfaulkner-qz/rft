@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,13 +21,9 @@ var organizeDirCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("organizeDir called")
 		includeDirs, _ := cmd.Flags().GetBool("includeDirs")
-		// makeWrapper, _ := cmd.Flags().GetBool("wrapper")
 		dryRun, _ := cmd.Flags().GetBool("dry")
-		// Make a function that gets all the files in the current directory
-		// Make a function that gets all the directories in the current directory
-		// Make a function that gets all the files in a directory
-		// getFilesInDir(includeDirs, makeWrapper)
-		cleanup(dryRun, includeDirs)
+
+		_ = cleanup(dryRun, includeDirs)
 	},
 }
 
@@ -39,59 +34,6 @@ func init() {
 	organizeDirCmd.Flags().BoolP("wrapper", "w", false, "Add wrapper around clenaup")
 	organizeDirCmd.Flags().Bool("includeDirs", false, "Include directories in the cleanup, if true directories will be moved")
 }
-
-func getFilesInDir(includeDirs bool, makeWrapper bool) {
-	// Get all the files in the current directory
-	currentDir, err := os.Getwd()
-	entries, err := os.ReadDir(currentDir)
-	if err != nil {
-		fmt.Println("Error reading directory")
-		return
-	}
-	todaysDate := time.Now().Format("2006-01-02")
-
-	if makeWrapper {
-		if err := os.Mkdir(todaysDate, 0777); err != nil {
-			fmt.Println("Error making directory")
-			return
-		}
-	}
-	for _, entry := range entries {
-		if !includeDirs { // Filter out directories
-			if entry.IsDir() {
-				continue
-			}
-		}
-		fmt.Println("Entry info: %v", entry.Type().IsRegular())
-
-	}
-}
-
-// From GPT
-func moveFile(sourcePath, destPath string) error {
-	inputFile, err := os.Open(sourcePath)
-	if err != nil {
-		return fmt.Errorf("Couldn't open source file: %s", err)
-	}
-	outputFile, err := os.Create(destPath)
-	if err != nil {
-		inputFile.Close()
-		return fmt.Errorf("Couldn't open dest file: %s", err)
-	}
-	defer outputFile.Close()
-	_, err = io.Copy(outputFile, inputFile)
-	inputFile.Close()
-	if err != nil {
-		return fmt.Errorf("Writing to output file failed: %s", err)
-	}
-	// The copy was successful, so now delete the original file
-	err = os.Remove(sourcePath)
-	if err != nil {
-		return fmt.Errorf("Failed removing original file: %s", err)
-	}
-	return nil
-}
-
 
 func cleanup(dryRun bool, moveDirs bool) error {
 	// Get the current date
