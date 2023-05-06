@@ -37,7 +37,7 @@ func init() {
 
 	organizeDirCmd.Flags().BoolP("dry", "d", false, "Do a dryrun and printout the stats for the operation") // Here you will define your flags and configuration settings.
 	organizeDirCmd.Flags().BoolP("wrapper", "w", false, "Add wrapper around clenaup")
-	organizeDirCmd.Flags().BoolP("includeDirs", "d", false, "Include directories in the cleanup, if true directories will be moved")
+	organizeDirCmd.Flags().Bool("includeDirs", false, "Include directories in the cleanup, if true directories will be moved")
 }
 
 func getFilesInDir(includeDirs bool, makeWrapper bool) {
