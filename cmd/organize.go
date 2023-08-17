@@ -17,13 +17,14 @@ import (
 var organizeDirCmd = &cobra.Command{
 	Use:   "organizeDir",
 	Short: "Quickly organize a full directory, non-recursivly, by day",
-	Long:  "Util to keep directories clean, by default groups all files in that dir by day,",
+	Long:  "This util is design to quickly organize a directory by day, non-recursivly. ",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("organizeDir called")
+		fmt.Println("Organizing directory...")
 		includeDirs, _ := cmd.Flags().GetBool("includeDirs")
 		dryRun, _ := cmd.Flags().GetBool("dry")
 
 		_ = cleanup(dryRun, includeDirs)
+		fmt.Println("Done")
 	},
 }
 
