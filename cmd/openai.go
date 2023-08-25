@@ -11,59 +11,54 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+type UserInteraction struct {
+	InteractionType   LLMInteractionInterface
+	ShouldIterate     bool
+	EvalString        string
+	AdditionalContext string
+}
+
 // Read in the openai token from an environment variable
 var openAIToken string = os.Getenv("OPENAI_API_KEY")
 
-func ToneEval(evalString *string, additionalContext *string, shouldIterate *bool) {
-	prompt := fmt.Sprintf("You are an expert in sentiment and text analysis. First what is the general sentiment and tone of this string: ```%s``` \n %s", *evalString, generateAdditionalContext(additionalContext))
-
+func haveCoversation(interaction *UserInteraction) {
+	promptString, err := interaction.InteractionType.GeneratePrompt(&interaction.EvalString, &interaction.AdditionalContext)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	messages := []openai.ChatCompletionMessage{
-		{Role: openai.ChatMessageRoleSystem, Content: prompt},
+		{Role: openai.ChatMessageRoleSystem, Content: promptString},
 	}
 
 	for {
 		fmt.Println("\nAssistant: ")
-		response := makeOpenAICall(&messages)
-		if !*shouldIterate || len(response) == 0 {
+		response := makeOpenAICall(&messages, interaction.InteractionType.GetMaxTokens())
+		if !interaction.ShouldIterate || len(response) == 0 {
 			break
 		}
 		messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleAssistant, Content: response})
 
-		// Get user input`
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println("\n\nUser: ")
-		scanner.Scan()
-
-		if len(scanner.Text()) == 0 {
+		if usermessage, err := getUserInput(); err != nil || len(usermessage) == 0 {
 			break
+		} else {
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: usermessage,
+			})
 		}
-		if scanner.Err() != nil {
-			fmt.Println("Error: ", scanner.Err())
-			break
-		}
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: scanner.Text(),
-		})
-
 	}
+
 }
 
-func generateAdditionalContext(additionalContext *string) string {
-	if additionalContext != nil && len(*additionalContext) > 0 {
-		return fmt.Sprintf("Some additional context for this analysis: ```%s```", *additionalContext)
-	}
-	return ""
-}
-
-func makeOpenAICall(messages *[]openai.ChatCompletionMessage) string {
+func makeOpenAICall(messages *[]openai.ChatCompletionMessage, maxTokens int) string {
 	c := openai.NewClient(openAIToken)
 	ctx := context.Background()
 
 	req := openai.ChatCompletionRequest{
 		Model:       openai.GPT3Dot5Turbo,
 		Messages:    *messages,
-		MaxTokens:   200,
+		MaxTokens:   maxTokens,
 		Temperature: 0.7,
 		Stream:      false,
 	}
@@ -90,4 +85,16 @@ func makeOpenAICall(messages *[]openai.ChatCompletionMessage) string {
 		responseMessage += response.Choices[0].Delta.Content
 		fmt.Printf(response.Choices[0].Delta.Content)
 	}
+}
+
+func getUserInput() (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("\n\nUser: ")
+	scanner.Scan()
+
+	if scanner.Err() != nil {
+		fmt.Println("Error: ", scanner.Err())
+		return "", scanner.Err()
+	}
+	return scanner.Text(), nil
 }
