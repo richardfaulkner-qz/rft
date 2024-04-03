@@ -28,7 +28,7 @@ func init() {
 	textCmds.AddCommand(brainstormCmd)
 
 	additionalContext = textCmds.PersistentFlags().StringP("context", "c", "", "Additional context to be used in analysis")
-	shouldIterate = textCmds.PersistentFlags().BoolP("iterable", "i", true, "Whether or not you want to iterate after the first response, true by default")
+	shouldIterate = textCmds.PersistentFlags().BoolP("iterable", "i", false, "Whether or not you want to iterate after the first response")
 }
 
 var textToneCmd = &cobra.Command{

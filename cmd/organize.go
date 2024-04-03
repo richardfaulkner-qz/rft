@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+Copyright © 2023 Rick
 */
 package cmd
 
@@ -13,17 +13,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TODO:  not sure this is the best pattern
+var silence *bool
+
 // organizeDirCmd represents the organizeDir command
 var organizeDirCmd = &cobra.Command{
 	Use:   "organizeDir",
 	Short: "Quickly organize a full directory, non-recursivly, by day",
 	Long:  "This util is design to quickly organize a directory by day, non-recursivly. ",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Organizing directory...")
+		if silence != nil {
+			fmt.Println("Organizing directory...")
+		}
 		includeDirs, _ := cmd.Flags().GetBool("includeDirs")
 		dryRun, _ := cmd.Flags().GetBool("dry")
 
-		_ = cleanup(dryRun, includeDirs)
+		_ = cleanup(dryRun,	 includeDirs)
 		fmt.Println("Done")
 	},
 }
@@ -33,6 +38,7 @@ func init() {
 
 	organizeDirCmd.Flags().BoolP("dry", "d", false, "Do a dryrun and printout the stats for the operation") // Here you will define your flags and configuration settings.
 	organizeDirCmd.Flags().BoolP("wrapper", "w", false, "Add wrapper around clenaup")
+	silence = organizeDirCmd.Flags().BoolP("silent", "s", false, "Silence text outputs")
 	organizeDirCmd.Flags().Bool("includeDirs", false, "Include directories in the cleanup, if true directories will be moved")
 }
 
