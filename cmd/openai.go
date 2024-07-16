@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	utils "github.com/richardfaulkner-qz/rft/internal"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -39,7 +39,7 @@ func haveCoversation(interaction *UserInteraction) {
 		}
 		messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleAssistant, Content: response})
 
-		if usermessage, err := getUserInput(); err != nil || len(usermessage) == 0 {
+		if usermessage, err := utils.GetUserChatInput(); err != nil || len(usermessage) == 0 {
 			break
 		} else {
 			messages = append(messages, openai.ChatCompletionMessage{
@@ -85,16 +85,4 @@ func makeOpenAICall(messages *[]openai.ChatCompletionMessage, maxTokens int) str
 		responseMessage += response.Choices[0].Delta.Content
 		fmt.Printf(response.Choices[0].Delta.Content)
 	}
-}
-
-func getUserInput() (string, error) {
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("\n\nUser: ")
-	scanner.Scan()
-
-	if scanner.Err() != nil {
-		fmt.Println("Error: ", scanner.Err())
-		return "", scanner.Err()
-	}
-	return scanner.Text(), nil
 }
