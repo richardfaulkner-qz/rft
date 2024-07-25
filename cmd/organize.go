@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	utils "github.com/richardfaulkner-qz/rft/internal"
@@ -30,7 +31,7 @@ var organizeDirCmd = &cobra.Command{
 	Short: "Quickly organize a full directory, non-recursivly, by day",
 	Long:  "This util is design to quickly organize a directory by day, non-recursivly. ",
 	Run: func(cmd *cobra.Command, args []string) {
-		if !config.silence {
+		if !c.silence {
 			cmd.Println("Organizing directory...")
 		}
 
@@ -60,17 +61,17 @@ func cleanup(c config) error {
 
 	// Create the wrapper directory
 	dirName := dateStr + " -- cleanup"
-	if !c.dryRun {
-		if err := os.Mkdir(dirName, 0755); err != nil {
-			return fmt.Errorf("failed to create directory: %v", err)
-		}
-	}
 
 	// Map of creation dates to lists of files
 	filesByDate := make(map[string][]string)
+	fileCount := 0
 
 	// Walk the current directory
 	if err := filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
+		if strings.Contains(path, "/") { // skip subdirectories
+			return nil
+		}
+		fileCount++
 		if err != nil {
 			return err
 		}
@@ -91,15 +92,32 @@ func cleanup(c config) error {
 		return fmt.Errorf("failed to walk directory: %v", err)
 	}
 
-	// Get user response to perform the cleanup
-	if resp, err := utils.GetYNUserInput(); err != nil || !resp {
-		return err
+	if !c.silence {
+		fmt.Printf("Will move %+v files to %+v directories \n", fileCount, len(filesByDate))
+	}
+
+	if !c.force {
+		if resp, err := utils.GetYNUserInput(); err != nil || !resp {
+			if resp {
+				if !c.silence {
+					fmt.Println("Cleanup canceled")
+				}
+				return nil
+			}
+			return err
+		}
+
+	}
+
+	if !c.dryRun {
+		if err := os.Mkdir(dirName, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %v", err)
+		}
 	}
 
 	// Move the files into their respective folders
 	for date, files := range filesByDate {
-		// Skip dates with no files if not a dry run
-		if len(files) == 0 && !c.dryRun {
+		if len(files) == 0 {
 			continue
 		}
 
@@ -112,9 +130,7 @@ func cleanup(c config) error {
 
 		// Move each file into the date directory if not a dry run
 		for _, file := range files {
-			if c.dryRun {
-				fmt.Printf("Would move %s to %s\n", file, filepath.Join(dirName, date))
-			} else {
+			if !c.dryRun {
 				if err := os.Rename(file, filepath.Join(dirName, date, filepath.Base(file))); err != nil {
 					return fmt.Errorf("failed to move file: %v", err)
 				}
