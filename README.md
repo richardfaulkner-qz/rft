@@ -13,3 +13,4 @@ rft [command] [options]
 ```
 
 Each command has a help, use -h or --help to see the help.
+# rft
